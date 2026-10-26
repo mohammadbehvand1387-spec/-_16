@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#050912">
+<title>ODYSSEY | آخرین امید بشریت</title>
+
+<style>
+* { box-sizing: border-box; }
+
+:root {
+  --cyan: #58eaff;
+  --blue: #168dff;
+  --green: #65ffbd;
+  --red: #ff5269;
+  --panel: rgba(3, 15, 28, .91);
+}
+
+body {
+  margin: 0;
+  background: #02050a;
+  color: #dffaff;
+  font-family: Tahoma, sans-serif;
+  overflow: hidden;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#game {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  min-height: 440px;
+  overflow: hidden;
+  background: #02050a;
+}
+
+#scene {
+  position: absolute;
+  inset: 0;
+  background: url("cockpit.png") center center / cover no-repeat;
+  transition: filter .4s, transform .3s;
+}
+
+#scene.lights-off {
+  filter: brightness(.55);
+}
+
+#scene.boost {
+  filter: brightness(1.12) saturate(1.2);
+}
+
+/* رابط کاربری روی تصویر */
+
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hud button,
+.hud input,
+.hud .interactive {
+  pointer-events: auto;
+}
+
+.top {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.brand, .telemetry {
+  background: var(--panel);
+  border: 1px solid #39cfff77;
+  border-radius: 8px;
+  padding: 9px 12px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 0 18px #00bfff12;
+}
+
+.brand {
+  color: var(--cyan);
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.brand small {
+  display: block;
+  color: #9ab9cc;
+  font-size: 9px;
+  margin-top: 5px;
+  font-weight: normal;
+}
+
+.telemetry {
+  text-align: left;
+  font-size: 10px;
+  line-height: 1.9;
+  color: #b7e7ff;
+  direction: ltr;
+}
+
+.green { color: var(--green); }
+.red { color: var(--red); }
+
+.status-panel {
+  position: absolute;
+  top: 100px;
+  left: 12px;
+  width: 155px;
+  background: var(--panel);
+  border: 1px solid #39cfff66;
+  border-radius: 8px;
+  padding: 11px;
+  backdrop-filter: blur(8px);
+  font-size: 10px;
+}
+
+.status-panel h3 {
+  margin: 0 0 12px;
+  font-size: 11px;
+  color: var(--cyan);
+}
+
+.stat {
+  margin: 10px 0;
+}
+
+.stat-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 5px;
+  margin-bottom: 5px;
+}
+
+.bar {
+  height: 4px;
+  background: #173043;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.bar span {
+  display: block;
+  height: 100%;
+  background: var(--cyan);
+  transition: width .3s;
+}
+
+#fuelBar { background: #ffb45d; }
+#hullBar { background: var(--green); }
+#energyBar { background: #6a8bff; }
+
+.readout {
+  position: absolute;
+  top: 100px;
+  right: 12px;
+  width: 145px;
+  padding: 10px;
+  border: 1px solid #39cfff66;
+  border-radius: 8px;
+  background: var(--panel);
+  backdrop-filter: blur(8px);
+  font-size: 10px;
+  line-height: 2;
+}
+
+.readout h3 {
+  color: var(--cyan);
+  margin: 0 0 5px;
+  font-size: 11px;
+}
+
+#direction {
+  color: var(--green);
+  font-size: 12px;
+}
+
+#event {
+  color: #a5c8db;
+  min-height: 25px;
+}
+
+/* نشانگر هدف */
+
+.crosshair {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  width: 48px;
+  height: 48px;
+  border: 1px solid #62e9ff88;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: left .25s, top .25s;
+}
+
+.crosshair::before,
+.crosshair::after {
+  content: "";
+  position: absolute;
+  background: #62e9ffbb;
+}
+
+.crosshair::before {
+  width: 70px;
+  height: 1px;
+  top: 50%;
+  left: -12px;
+}
+
+.crosshair::after {
+  height: 70px;
+  width: 1px;
+  left: 50%;
+  top: -12px;
+}
+
+/* فرمان تعاملی */
+
+.steering {
+  position: absolute;
+  bottom: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 116px;
+  height: 116px;
+  border: 9px solid #a4edff;
+  border-radius: 50%;
+  background: #071626cc;
+  box-shadow: 0 0 18px #00cfff66,
+              inset 0 0 15px #00cfff33;
+  touch-action: none;
+  cursor: grab;
+  transition: transform .08s linear;
+}
+
+.steering::before,
+.steering::after {
+  content: "";
+  position: absolute;
+  background: #9deaff;
+  left: 50%;
+  top: 50%;
+  transform-origin: center top;
+}
+
+.steering::before {
+  width: 7px;
+  height: 43px;
+  transform: translateX(-50%);
+}
+
+.steering::after {
+  width: 7px;
+  height: 43px;
+  transform: translateX(-50%) rotate(120deg);
+}
+
+.steering .hub {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--cyan);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: #071626;
+  display: grid;
+  place-items: center;
+  color: var(--cyan);
+  font-size: 14px;
+}
+
+.steering-label {
+  position: absolute;
+  left: 50%;
+  bottom: calc(20% - 22px);
+  transform: translateX(-50%);
+  color: #a5eaff;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+/* پنل کنترل پایین */
+
+.controls {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.control {
+  min-width: 65px;
+  padding: 9px 8px;
+  border: 1px solid #38cfff88;
+  border-radius: 7px;
+  background: rgba(3, 16, 29, .94);
+  color: #bdeeff;
+  font-size: 10px;
+  backdrop-filter: blur(8px);
+  transition: .15s;
+}
+
+.control b {
+  display: block;
+  font-size: 17px;
+  color: var(--cyan);
+  margin-bottom: 4px;
+}
+
+.control:active {
+  transform: scale(.94);
+}
+
+.control.active {
+  border-color: var(--green);
+  color: var(--green);
+  box-shadow: 0 0 12px #00ff9d22;
+}
+
+.control.active b { color: var(--green); }
+.control.danger b { color: var(--red); }
+
+/* پنل های اطلاعاتی */
+
+.modal {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  background: #000b;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
+.modal.show { display: flex; }
+
+.dialog {
+  width: 100%;
+  max-width: 450px;
+  max-height: 78dvh;
+  overflow: auto;
+  padding: 20px;
+  background: linear-gradient(145deg, #10293b, #030b14);
+  border: 1px solid var(--cyan);
+  border-radius: 12px;
+  box-shadow: 0 0 40px #00bfff22;
+}
+
+.dialog h2 {
+  font-size: 17px;
+  color: var(--cyan);
+  margin-top: 0;
+}
+
+.dialog p, .dialog li {
+  font-size: 12px;
+  line-height: 2.1;
+  color: #c5dce8;
+}
+
+.dialog li { margin-bottom: 6px; }
+
+.close {
+  width: 100%;
+  padding: 12px;
+  background: #10354a;
+  border: 1px solid #3bd7ff;
+  border-radius: 7px;
+  margin-top: 10px;
+}
+
+.toast {
+  position: absolute;
+  z-index: 20;
+  top: 75px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 90%;
+  padding: 10px 15px;
+  background: #061a2aee;
+  border: 1px solid var(--cyan);
+  border-radius: 7px;
+  text-align: center;
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity .2s;
+  pointer-events: none;
+}
+
+.toast.show { opacity: 1; }
+
+@media (max-width: 600px) {
+  #scene { background-position: center center; }
+
+  .brand { font-size: 11px; padding: 8px; }
+  .brand small { font-size: 8px; }
+  .telemetry { font-size: 9px; padding: 7px; }
+
+  .status-panel {
+    top: 94px;
+    left: 7px;
+    width: 118px;
+    padding: 8px;
+    font-size: 9px;
+  }
+
+  .readout {
+    top: 94px;
+    right: 7px;
+    width: 112px;
+    padding: 8px;
+    font-size: 9px;
+  }
+
+  .steering {
+    width: 88px;
+    height: 88px;
+    border-width: 7px;
+    bottom: 22%;
+  }
+
+  .steering::before,
+  .steering::after {
+    height: 32px;
+    width: 5px;
+  }
+
+  .steering-label { bottom: calc(22% - 19px); }
+
+  .controls {
+    bottom: 8px;
+    left: 6px;
+    right: 6px;
+    gap: 4px;
+  }
+
+  .control {
+    min-width: 0;
+    flex: 1 1 21%;
+    padding: 7px 3px;
+    font-size: 9px;
+  }
+
+  .control b { font-size: 15px; }
+}
+
+@media (max-height: 520px) {
+  .status-panel, .readout { top: 75px; }
+  .steering {
+    width: 75px;
+    height: 75px;
+    bottom: 23%;
+  }
+  .controls { bottom: 5px; }
+  .control { padding: 5px; }
+}
+</style>
+</head>
+
+<body>
+<div id="game">
+
+  <div id="scene"></div>
+
+  <div class="hud">
+
+    <div class="top">
+      <div class="brand">
+        ◈ ODYSSEY
+        <small>آخرین امید بشریت · مأموریت نجات</small>
+      </div>
+
+      <div class="telemetry">
+        <div id="clock">00:00:00</div>
+        <div id="flightState" class="green">SYSTEM ONLINE</div>
+        <div>FLIGHT: MANUAL</div>
+      </div>
+    </div>
+
+    <section class="status-panel">
+      <h3>وضعیت سفینه</h3>
+
+      <div class="stat">
+        <div class="stat-label">
+          <span>سوخت</span><span id="fuelText">78%</span>
+        </div>
+        <div class="bar"><span id="fuelBar" style="width:78%"></span></div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-label">
+          <span>اکسیژن</span><span id="oxygenText">96%</span>
+        </div>
+        <div class="bar"><span id="oxygenBar" style="width:96%"></span></div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-label">
+          <span>بدنه</span><span id="hullText">100%</span>
+        </div>
+        <div class="bar"><span id="hullBar" style="width:100%"></span></div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-label">
+          <span>انرژی</span><span id="energyText">83%</span>
+        </div>
+        <div class="bar"><span id="energyBar" style="width:83%"></span></div>
+      </div>
+    </section>
+
+    <section class="readout">
+      <h3>اطلاعات پرواز</h3>
+      <div>جهت: <span id="direction">۰°</span></div>
+      <div>موتور: <span id="engineState">خاموش</span></div>
+      <div>سپر: <span id="shieldState">خاموش</span></div>
+      <div id="event">مسیر آزاد است.</div>
+    </section>
+
+    <div class="crosshair" id="crosshair"></div>
+
+    <div class="steering" id="steering">
+      <div class="hub">✦</div>
+    </div>
+    <div class="steering-label">فرمان هدایت سفینه</div>
+
+    <div class="controls">
+      <button class="control" id="engine">
+        <b>▲</b>موتور
+      </button>
+      <button class="control" id="brake">
+        <b>▣</b>ترمز
+      </button>
+      <button class="control" id="shield">
+        <b>⬡</b>سپر
+      </button>
+      <button class="control" id="radar">
+        <b>◎</b>رادار
+      </button>
+      <button class="control" id="lights">
+        <b>☼</b>روشنایی
+      </button>
+      <button class="control" id="scan">
+        <b>⌕</b>اسکن
+      </button>
+      <button class="control" id="manual">
+        <b>📖</b>راهنما
+      </button>
+      <button class="control" id="mission">
+        <b>🎯</b>مأموریت
+      </button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="modal" id="modal">
+    <div class="dialog">
+      <h2 id="dialogTitle">دفترچه راهنمای خلبان</h2>
+      <div id="dialogContent"></div>
+      <button class="close" id="close">بازگشت به کابین</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+const state = {
+  fuel: 78,
+  oxygen: 96,
+  hull: 100,
+  energy: 83,
+  engine: false,
+  shield: false,
+  radar: false,
+  lights: true,
+  angle: 0,
+  speed: 0,
+  auto: false
+};
+
+let toastTimer;
+
+function notify(message) {
+  $("toast").textContent = message;
+  $("toast").classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(
+    () => $("toast").classList.remove("show"), 2200
+  );
+}
+
+function updateStats() {
+  ["fuel", "oxygen", "hull", "energy"].forEach(key => {
+    const value = Math.max(0, Math.min(100, state[key]));
+    $(key + "Text").textContent = Math.round(value) + "%";
+    $(key + "Bar").style.width = value + "%";
+  });
+
+  $("engineState").textContent =
+    state.engine ? "روشن" : "خاموش";
+
+  $("shieldState").textContent =
+    state.shield ? "فعال" : "خاموش";
+
+  $("direction").textContent =
+    Math.round(state.angle) + "°";
+
+  $("flightState").textContent =
+    state.engine ? "ENGINE ACTIVE" : "SYSTEM ONLINE";
+}
+
+function turn(amount) {
+  if (state.auto) {
+    notify("خلبان خودکار فعال است.");
+    return;
+  }
+
+  state.angle = Math.max(-90, Math.min(90, state.angle + amount));
+
+  $("steering").style.transform =
+    `translateX(-50%) rotate(${state.angle}deg)`;
+
+  $("crosshair").style.left =
+    (50 + state.angle * .22) + "%";
+
+  // بازخورد بصری چرخش سفینه
+  $("scene").style.transform =
+    `scale(1.04) translateX(${-state.angle * .12}px)`;
+
+  updateStats();
+}
+
+const steering = $("steering");
+let dragging = false;
+let lastX = 0;
+
+steering.addEventListener("pointerdown", e => {
+  if (state.auto) {
+    notify("ابتدا خلبان خودکار را خاموش کن.");
+    return;
+  }
+
+  dragging = true;
+  lastX = e.clientX;
+  steering.setPointerCapture(e.pointerId);
+});
+
+steering.addEventListener("pointermove", e => {
+  if (!dragging) return;
+  const dx = e.clientX - lastX;
+  turn(dx * .7);
+  lastX = e.clientX;
+});
+
+function stopDrag() { dragging = false; }
+
+steering.addEventListener("pointerup", stopDrag);
+steering.addEventListener("pointercancel", stopDrag);
+
+function toggle(id, key, messageOn, messageOff) {
+  $(id).addEventListener("click", () => {
+    state[key] = !state[key];
+    $(id).classList.toggle("active", state[key]);
+    notify(state[key] ? messageOn : messageOff);
+    updateStats();
+  });
+}
+
+toggle("engine", "engine",
+  "موتور روشن شد.", "موتور خاموش شد.");
+
+toggle("shield", "shield",
+  "سپر دفاعی فعال شد.", "سپر دفاعی غیرفعال شد.");
+
+toggle("radar", "radar",
+  "رادار فعال شد.", "رادار خاموش شد.");
+
+toggle("lights", "lights",
+  "نور کابین فعال شد.", "نور کابین کاهش یافت.");
+
+$("lights").addEventListener("click", () => {
+  $("scene").classList.toggle("lights-off", !state.lights);
+});
+
+$("brake").addEventListener("click", () => {
+  state.engine = false;
+  $("engine").classList.remove("active");
+  state.speed = 0;
+  updateStats();
+  notify("موتور خاموش شد؛ ترمز نمایشی فعال شد.");
+});
+
+$("scan").addEventListener("click", () => {
+  state.energy = Math.max(0, state.energy - 2);
+  $("event").textContent = "اسکن کامل شد؛ داده‌ای ثبت نشده.";
+  updateStats();
+  notify("اسکن محیط انجام شد.");
+});
+
+function openDialog(title, html) {
+  $("dialogTitle").textContent = title;
+  $("dialogContent").innerHTML = html;
+  $("modal").classList.add("show");
+}
+
+$("manual").addEventListener("click", () => {
+  openDialog("📖 دفترچه راهنمای خلبان", `
+    <p><b>ماموریت:</b> آخرین بازماندگان بشر را از منطقه خطرناک خورشیدی خارج کن.</p>
+    <ul>
+      <li><b>فرمان:</b> فرمان را بکش تا جهت سفینه تغییر کند.</li>
+      <li><b>موتور:</b> برای شتاب‌گیری استفاده می‌شود و سوخت مصرف می‌کند.</li>
+      <li><b>ترمز:</b> موتور را خاموش می‌کند. فیزیک ترمز در مرحله بعد اضافه می‌شود.</li>
+      <li><b>سپر:</b> برای محافظت در برابر اجرام فضایی در نظر گرفته شده است.</li>
+      <li><b>رادار:</b> برای شناسایی سیاره‌ها و خطرهای اطراف خواهد بود.</li>
+      <li><b>انرژی:</b> اسکنر از انرژی نمایشی استفاده می‌کند.</li>
+    </ul>
+    <p>این نسخه کابین تعاملی است. جاذبه، برخورد، آسیب واقعی و حرکت کامل در بخش گیم‌پلی اضافه خواهند شد.</p>
+  `);
+});
+
+$("mission").addEventListener("click", () => {
+  openDialog("🎯 ماموریت اصلی", `
+    <p><b>نام عملیات:</b> آخرین امید بشریت</p>
+    <p>از زمین خارج شو، منابع سفینه را حفظ کن و از منطقه خطرناک خورشیدی عبور کن.</p>
+    <p>هدف نهایی: پیدا کردن مکانی امن برای بازماندگان انسان.</p>
+    <p>وضعیت فعلی: آماده‌سازی کابین.</p>
+  `);
+});
+
+$("close").addEventListener("click", () => {
+  $("modal").classList.remove("show");
+});
+
+$("modal").addEventListener("click", e => {
+  if (e.target === $("modal")) {
+    $("modal").classList.remove("show");
+  }
+});
+
+// مصرف سوخت و تولید شتاب نمایشی
+setInterval(() => {
+  if (state.engine && state.fuel > 0) {
+    state.fuel = Math.max(0, state.fuel - .25);
+    state.speed += .5;
+    $("scene").classList.add("boost");
+  } else {
+    $("scene").classList.remove("boost");
+  }
+
+  if (state.fuel <= 0 && state.engine) {
+    state.engine = false;
+    $("engine").classList.remove("active");
+    notify("هشدار: سوخت تمام شد!");
+  }
+
+  updateStats();
+}, 1000);
+
+// ساعت
+function updateClock() {
+  $("clock").textContent = new Date().toLocaleTimeString("fa-IR");
+}
+
+updateClock();
+setInterval(updateClock, 1000);
+
+updateStats();
+</script>
+</body>
+        </html>
